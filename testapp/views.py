@@ -1,116 +1,173 @@
-from django.shortcuts import render,HttpResponseRedirect
-from .forms import SignUpForm,student_out_form
-from django.contrib.auth import authenticate,login,logout, update_session_auth_hash
-from django.contrib.auth.forms import AuthenticationForm,PasswordChangeForm
+from django.shortcuts import redirect, render,HttpResponseRedirect
+from django.contrib.auth.forms import UserCreationForm,AuthenticationForm,PasswordChangeForm,SetPasswordForm,UserChangeForm
+from .forms import SignUpForm,EditUserProfileForm,EditAdminProfile
 from django.contrib import messages
-from .models import recrd
-import datetime
-def register(request):
-    if request.user.is_superuser:
-        if request.method == "POST":
-            sign_up_form = SignUpForm(request.POST)
-            if sign_up_form.is_valid():
-                sign_up_form.save()
-                return HttpResponseRedirect('/')
-            else:
-                messages.success(request,"A USER ALREADY EXIST WITH USER NAME")
-                return HttpResponseRedirect('/login/')
+from django.contrib.auth import authenticate,login,logout, update_session_auth_hash
+from django.contrib.auth.models import Group, User
 
-        else:
-            sign_up_form = SignUpForm() 
-            return  render(request,'register.html',{'form':sign_up_form})
+
+
+# Create your views here.
+# this is the simple registration form
+
+def register(request):
+    if request.method == "POST":
+        ab =  UserCreationForm(request.POST)
+        if ab.is_valid():
+            ab.save()
     else:
-        messages.success(request,"YOU ARE NOT AUTHORISED TO USE THIS PAGE")
-        return HttpResponseRedirect('/')
+        ab = UserCreationForm()
+    return render(request,'signup.html',{'form':ab})
+
+# simple registration form gets completed
+
+
+# this is customized registration form
+def advance_register(request):
+    if request.method == "POST":
+        ab = SignUpForm(request.POST)
+        if ab.is_valid():
+            messages.success(request,'CONGRATULATIONS YOUR ACCOUNT HAS BEEN SUCCCEFULLY CREATED ')
+            abc = ab.save()
+            group = Group.objects.get(name = 'clg')
+            abc.groups.add(group)
+    else:
+        ab = SignUpForm() 
+    return  render(request,'signup.html',{'form':ab})
+
+# customize registration form gets completed
+
+
+# login
 
 def user_login(request):
     if request.user.is_authenticated:
-       return HttpResponseRedirect('/dashboard/')
+        return HttpResponseRedirect('/profile/')
     if request.method == "POST":
         fm = AuthenticationForm(request=request ,data = request.POST)
         if fm.is_valid():
             uname = fm.cleaned_data['username']
             upass = fm.cleaned_data['password']
-            print(uname,upass)
             user = authenticate(username = uname, password =upass )
             if user is not None:
                 login(request,user)
-                return HttpResponseRedirect('/dashboard/')
+                #MORE THAN ONE MESSAGE CAN BE SENT USING THE MESSAGE FRAMEWORK
+                #messages.success(request, 'hello from the messsae')
+                messages.success(request , 'Logged in successfully !!')
+                return HttpResponseRedirect('/profile/')
         else:
-            messages.success(request,'you are not a valid user')
+            messages.success(request,'please enter the valid credental !!')
     else:
         fm = AuthenticationForm()
-    return render(request,'login.html',{'form':fm,'nam':'LOGIN'})
+    return render(request,'login.html',{'form':fm})
+
+#login completed
+
+# logout
 
 def user_logout(request):
     if request.user.is_authenticated:
         logout(request)
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect('/login/')
     else:
         messages.success(request,'First login the page !!')
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect('/login/')
 
-    
-def student_out(request):
-    duplicate  = recrd.objects.all().filter(student_id = request.user.username,entry_time = None)
-    if duplicate:
-        messages.success(request,'A PASS HAS BEEN ALREADY ISSUED WITH YOUR ID YOU CAN NOT APPLY FOR TWO PASS AT A TIME')
-        return HttpResponseRedirect('/dashboard/')
-    if request.method == 'POST':
-        ab = student_out_form(request.POST)
-        if ab.is_valid():
-            purpose = ab.cleaned_data['purpose']
-            destination = ab.cleaned_data['destination']
-            #branch = ab.cleaned_data['student_branch']
-            ab = recrd(student_id = request.user.username ,student_name = request.user.get_short_name(),student_branch = request.user.last_name,purpose= purpose,destination = destination)
-            ab.save()
-            return HttpResponseRedirect('/dashboard/')
+# logout completed
 
-    else:
-        fm = student_out_form()
-        return render (request,'student_out.html',{'form':fm,'nam':'EXIT_FORM'})
-
-def already_issued_pass(request):
+def user_profile(request):
     if request.user.is_authenticated:
-        data = recrd.objects.all().filter(student_id = request.user.username,entry_time = None)
-        return render(request,'dashboard.html',{'form':data})
-def dashboard(request):
-    exit_data = recrd.objects.all().filter(entry_time = None).order_by('student_id') 
-    if request.method == 'POST':
-        ab = request.POST['sear']
-        data = recrd.objects.all().filter(student_id = ab,entry_time = None)
-        if data:
-            return render(request,'dashboard.html',{'student_detail':data,'reg':data[0].student_id,'exit_data_student':exit_data})
-        else:
-            messages.success(request,'NO ANY PASS HAS BEEN ISSUED FOR THE GIVEN REGISTRATION NO ')
-            return render(request,'dashboard.html',{'exit_data_student':exit_data})
+        return render(request,'profile.html',{'name':request.user})
     else:
-        if not request.user.is_staff:
-            qw = recrd.objects.all().filter(student_id = request.user.username).order_by('-exit_time')
-            return render (request,'dashboard.html',{'form':qw,'show':1})
-        else:
-            #exit_data = recrd.objects.all().filter(entry_time = None) 
-            return render(request,'dashboard.html',{'exit_data_student':exit_data})
+        return HttpResponseRedirect('/login/')
 
-def guard_submit(request,id):
-    ab = recrd.objects.get(student_id = int(id),entry_time = None)
-    ab.entry_time = datetime.datetime.now()
-    ab.save()
-    return HttpResponseRedirect('/dashboard/')
 
+#user password change if the password is konwn in the advance 
 def user_change_password(request):
     if not request.user.is_authenticated :
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect('/login/')
     if request.method == "POST":
         fm = PasswordChangeForm(user = request.user,data = request.POST)
         if fm.is_valid():
             fm.save()
-            # in order to be on the page of our choice we have to use 
-            #  update_session_auth_hash otherwise 
-            #  it will redirect to login page automatically
+            # in order to be on the page of our choice we have to use other it will redirect to login page automatically
             update_session_auth_hash(request,fm.user)
-            return HttpResponseRedirect('/dashboard/')
+            return HttpResponseRedirect('/profile/')
     else:
         fm = PasswordChangeForm(user = request.user)
-    return render(request,'change_password.html',{'form':fm,'nam':'CHANGE PASSWORD'})
-    
+    return render(request,'change_password.html',{'form':fm})
+
+# user_password change completed
+
+
+#password change when the password not konwn
+def forgot_password(request):
+    if request.method == "POST":
+        fm = SetPasswordForm(user = request.user,data = request.POST)
+        if fm.is_valid():
+            fm.save()
+            # in order to be on the page of our choice we have to use 
+            update_session_auth_hash(request,fm.user)
+            return HttpResponseRedirect('/profile/')
+    else:
+        fm = SetPasswordForm(user = request.user)
+    return render(request,'change_password.html',{'form':fm})
+# password change finished
+
+# user change form started
+def user_profile(request):
+    if request.user.is_authenticated:
+        if request.method == "POST":
+            if request.user.is_superuser == True:
+                fm = EditAdminProfile(request.POST,instance = request.user)
+                users = User.objects.all()
+            else:
+                fm = EditUserProfileForm(request.POST,instance= request.user)
+                users = None
+            if fm.is_valid():
+                fm.save()
+                messages.success(request,'Updated successfully !!')
+        #fm = UserChangeForm(instance = request.user)
+        # this is customised form
+        else:
+            if request.user.is_superuser == True:
+                users = User.objects.all()
+                fm = EditAdminProfile(instance = request.user)
+            else:
+                users = None
+                fm = EditUserProfileForm(instance = request.user)
+        return render(request,'profile.html',{'name':request.user,'form':fm,'users':users})
+    else:
+        return HttpResponseRedirect('/login/')
+
+def user_detail(request,id):
+    if request.user.is_authenticated:
+        pi = User.objects.get(pk=id)
+        if request.method =="POST":
+            fm = EditUserProfileForm(request.POST,instance = pi)
+            if fm.is_valid():
+                fm.save()
+                return HttpResponseRedirect('/profile_update/')
+        else:      
+            fm = EditUserProfileForm(instance = pi)
+        return  render(request,'userdetail.html',{'form':fm})
+    else:
+        return HttpResponseRedirect('/login/')
+
+def user_dashboard(request):
+    if request.user.is_authenticated:
+        return render (request,'dashboard.html',{'name':request.user.username})
+    else:
+        return HttpResponseRedirect('/login/')
+
+
+def test(request):
+    if request.method == "POST":
+        ab =  UserCreationForm(request.POST)
+        if ab.is_valid():
+            ab.save()
+    else:
+        ab = UserCreationForm()
+    return render(request,'hello.html',{'form':ab})
+
+

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body align="center">
+
+    <a href="{% url 'logout' %}">Logout</a> &nbsp&nbsp&nbsp&nbsp
+    <a href="{% url 'chpass' %}">Change_pass</a>&nbsp&nbsp&nbsp&nbsp
+    <a href="{% url 'forgot' %}">Forgot password</a>&nbsp&nbsp&nbsp&nbsp
+    <a href="{% url 'dashboard' %}">Dashboard </a><br>
+    <h3>HI  {{name |upper}}</h3>
+
+    {% if users %}
+        {% for user in users %}
+           <a href="{% url 'userdetail' user.id %}">{{user.username}} </a> <br>
+        {% endfor %}
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+        <small {% if message.tags %} class="{{message.tags}}" {% endif %}}> {{message}} </small>
+        {% endfor %}
+    {% endif %}
+    <br><br>
+
+
+    <form action="" method="POST" align="center" novalidate>
+        {% csrf_token %}
+        {% for fm in form %}
+            {{fm.label_tag}} {{fm}} {{fm.errors |striptags}} <br><br>
+        {% endfor %}
+        <input type="submit" value="REGISTER">
+    </form>
+<br>
+</body>
+</html>

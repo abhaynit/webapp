@@ -1,1 +1,1 @@
-web: gunicorn entry_exit.wsgi --log-file -
+web: gunicorn login.wsgi --log-file -
