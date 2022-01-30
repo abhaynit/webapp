@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}DASHBOARD{% endblock %}
+
+{% block body %} 
+
+<div class="container">
+    <div class="text-center alert alert-warning"><h1>DASHBOARD</h1></div>
+</div>
+
+<div class="container">
+    <div class="row text-center">
+        <div class="col-sm-4 offset-4"> 
+            {% if messages %}
+                {% for message in messages %}
+                        <small {% if message.tags %} class="{{message.tags}} text-center" {% endif %}}> <h6 class="alert alert-info"><strong>{{message | upper}}<i class="far fa-angry"></i></strong>  </h6></small>
+                {% endfor %}
+                {% if not request.user.is_staff %}
+                <div class="text-center mb-3 alert alert-danger">
+                    <a  href="{% url 'isuued_pass' %}">CLICK HERE TO  SEE THE ALREADY ISSUED PASS </a> 
+                </div> 
+                {% endif %}
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+
+<div class="container">
+
+    <form action="" method="POST" novalidate>
+        {% csrf_token %}
+        <div class="container text-center">
+
+{% if not request.user.is_staff %}
+    {% if form %}
+            <table class="table table-dark table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">STUDENT_ID</th>
+                    <th scope="col">STUDENT_NAME</th>
+                    <th scope="col">STUDENT_BRANCH</th>
+                    <th scope="col">PURPOSE</th>
+                    <th scope="col">DESTINATION</th>
+                    <th scope="col">EXIT_TIME</th>
+                    {% if show %}
+                    <th scope="col">ENTRY_TIME</th>
+                    <th scope="col">IS_LATE</th>
+                    {% endif %}
+                  </tr>
+                </thead>
+                {% for fm in form  %}
+                <tbody>
+                  <tr>
+                   <td><strong>{{fm.student_id }}</strong></td>
+                   <td><strong>{{fm.student_name |upper}}</strong></td>
+                   <td><strong>{{fm.student_branch }}</strong></td>
+                   <td><strong>{{fm.purpose }}</strong></td>
+                   <td><strong>{{fm.destination }}</strong></td>
+                   <td><strong>{{fm.exit_time }}</strong></td>
+                   {% if show %}
+                   <td><strong>{{fm.entry_time }}</strong></td>
+                   <td><strong>{{fm.is_late }}</strong></td>
+                   {% endif %}
+                  </tr>
+                </tbody>
+                {% endfor %}
+              </table>
+    {% endif %}
+{% else %}
+<div class="container">
+    <div class="row">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+              <a class="navbar-brand" href="#">ENTER STUDENT REGISTRATION NO : </a>
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <form class="d-flex" action="POST">
+                    {% csrf_token %}
+                 <!-- <input class="form-control me-2" type="number" placeholder="Search" aria-label="Search" name="sear">-->
+                 <input class="form-control" list="datalistOptions" id="exampleDataList" name="sear" placeholder="Type registration no">
+                 <datalist id="datalistOptions">
+                   {% for i in exit_data_student %}
+                   <option value={{i.student_id}}>
+                   {% endfor %}
+                   
+                 </datalist>
+                  <button class="btn btn-outline-success" type="submit">Search</button>
+                </form>
+              </div>
+
+            </div>
+          </nav>
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="row">
+        {% if student_detail %}
+            <table class="table table-dark table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">STUDENT_ID</th>
+                    <th scope="col">STUDENT_NAME</th>
+                    <th scope="col">STUDENT_BRANCH</th>
+                    <th scope="col">EXIT_TIME</th>
+                  </tr>
+                </thead>
+                {% for fm in student_detail  %}
+                <tbody>
+                  <tr>
+                   <td><strong>{{fm.student_id}}</strong></td>
+                   <td><strong>{{fm.student_name |upper}}</strong></td>
+                   <td><strong>{{fm.student_branch}}</strong></td>
+                   <td><strong>{{fm.exit_time}}</strong></td>
+                  </tr>
+                </tbody>
+                {% endfor %}
+              </table>
+              <div class="container">
+                  <div class="row">
+                  
+                      <div class="col-sm-4 offset-5"><a class="btn btn-info" href="{% url 'intime' reg %}">ENTRY <i class="fas fa-angle-double-right" style="font-size:17px;color:rgb(231, 59, 59)"></i></a>&nbsp<a class="btn btn-warning" href="{% url 'abhay'  %}">CHECK ANOTHER</a></div>
+                  
+                      
+                  </div>
+              </div>
+    {% endif %}
+    </div>
+</div>
+{% endif %}
+                
+            </div>
+        </div>
+        
+    
+    </form>
+    
+
+</div>
+
+
+{% endblock %}
